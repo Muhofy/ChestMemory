@@ -1,5 +1,38 @@
-{}{
+{
   "category.chestmemory": "ChestMemory",
-  "key.chestmemory.search": "Open Search",
-  "key.chestmemory.records": "Open Chest Records"
+  "key.chestmemory.search":  "Open Search",
+  "key.chestmemory.records": "Open Chest Records",
+
+  "chestmemory.toast.indexed":   "Chest Indexed",
+  "chestmemory.toast.updated":   "Chest Updated",
+  "chestmemory.toast.arrived":   "Destination Reached!",
+
+  "chestmemory.search.placeholder":   "Search for an item...",
+  "chestmemory.search.hint":          "Type the item you are looking for...",
+  "chestmemory.search.empty":         "Not found in any chest.",
+
+  "chestmemory.records.title":              "CHESTS",
+  "chestmemory.records.empty_list":         "No chests indexed yet.",
+  "chestmemory.records.select_hint":        "Select a chest",
+  "chestmemory.records.different_dimension":"Different dimension",
+  "chestmemory.records.last_updated":       "Last updated: ",
+  "chestmemory.records.slot_label_single":  "INVENTORY · 27 SLOTS",
+  "chestmemory.records.slot_label_double":  "DOUBLE CHEST · 54 SLOTS",
+  "chestmemory.records.btn.navigate":       "📍  Navigate",
+  "chestmemory.records.btn.delete":         "🗑  Delete",
+  "chestmemory.records.btn.confirm_yes":    "✔  Yes, Delete",
+  "chestmemory.records.btn.confirm_no":     "✖  Cancel",
+  "chestmemory.records.confirm_delete":     "Are you sure you want to delete this chest record?",
+
+  "chestmemory.compass.title":    "📦 Navigator",
+  "chestmemory.compass.arrived":  "Destination Reached!",
+  "chestmemory.compass.unit":     "m",
+
+  "chestmemory.item.unknown":     "Unknown",
+  "chestmemory.item.multi":       " different items",
+  "chestmemory.item.count_unit":  "x",
+  "chestmemory.item.dist_unit":   " blocks ",
+
+  "chestmemory.chest.default_name": "Chest #",
+  "chestmemory.chest.blk":          " blocks away"
 }

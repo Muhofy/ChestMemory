@@ -20,17 +20,13 @@ import java.util.List;
 
 public class SearchOverlay extends Screen {
 
-    // ── Layout ────────────────────────────────────────────────────────────
     private static final int BOX_W       = 360;
     private static final int INPUT_H     = 28;
     private static final int ROW_H       = 36;
     private static final int FOOTER_H    = 20;
     private static final int MAX_RESULTS = 5;
+    private static final int BOX_H       = INPUT_H + MAX_RESULTS * ROW_H + FOOTER_H;
 
-    // Toplam yükseklik her zaman sabit — kutu hiç zıplamaz
-    private static final int BOX_H = INPUT_H + MAX_RESULTS * ROW_H + FOOTER_H;
-
-    // ── Colors ────────────────────────────────────────────────────────────
     private static final int C_BG       = 0xFF111418;
     private static final int C_BG2      = 0xFF16191f;
     private static final int C_BORDER   = 0xFF1e2228;
@@ -41,30 +37,27 @@ public class SearchOverlay extends Screen {
     private static final int C_BLUE     = 0xFF38bdf8;
     private static final int C_DIM_TEXT = 0xFF333333;
 
-    // ── State ─────────────────────────────────────────────────────────────
     private TextFieldWidget searchField;
     private List<ChestStorage.SearchResult> results = new ArrayList<>();
     private int selectedIndex = 0;
     private final List<ButtonWidget> resultButtons = new ArrayList<>();
 
     public SearchOverlay() {
-        super(Text.literal("ChestMemory Search"));
+        super(Text.translatable("chestmemory.search.placeholder"));
     }
 
-    // Her zaman ekranın tam ortası — BOX_H sabit olduğu için kaymaz
     private int boxX() { return (width  - BOX_W) / 2; }
     private int boxY() { return (height - BOX_H) / 2; }
 
     @Override
     protected void init() {
         int bx = boxX(), by = boxY();
-
         searchField = new TextFieldWidget(textRenderer,
                 bx + 20, by + (INPUT_H - textRenderer.fontHeight) / 2,
                 BOX_W - 80, textRenderer.fontHeight + 2,
                 null, Text.empty());
         searchField.setMaxLength(64);
-        searchField.setPlaceholder(Text.literal("Item ara..."));
+        searchField.setPlaceholder(Text.translatable("chestmemory.search.placeholder"));
         searchField.setChangedListener(this::onSearchChanged);
         searchField.setDrawsBackground(false);
         addDrawableChild(searchField);
@@ -89,10 +82,7 @@ public class SearchOverlay extends Screen {
     private void refreshResultButtons() {
         for (ButtonWidget b : resultButtons) remove(b);
         resultButtons.clear();
-
-        int bx          = boxX();
-        int resultAreaY = boxY() + INPUT_H + 1;
-
+        int bx = boxX(), resultAreaY = boxY() + INPUT_H + 1;
         for (int i = 0; i < results.size(); i++) {
             final int idx = i;
             ButtonWidget btn = ButtonWidget.builder(Text.empty(), b -> {
@@ -107,16 +97,12 @@ public class SearchOverlay extends Screen {
 
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        // Dim background
         ctx.fill(0, 0, width, height, 0x88000000);
 
-        int bx    = boxX();
-        int by    = boxY();
-        String q  = searchField != null ? searchField.getText() : "";
+        int bx = boxX(), by = boxY();
+        String q = searchField != null ? searchField.getText() : "";
 
-        // Outer shadow
         ctx.fill(bx - 1, by - 1, bx + BOX_W + 1, by + BOX_H + 1, 0x44000000);
-        // Main box
         ctx.fill(bx, by, bx + BOX_W, by + BOX_H, C_BG);
 
         // ── Input row ─────────────────────────────────────────────────────
@@ -124,24 +110,24 @@ public class SearchOverlay extends Screen {
         ctx.drawTextWithShadow(textRenderer, Text.literal("⌕"),
                 bx + 7, by + (INPUT_H - textRenderer.fontHeight) / 2, C_SUB);
         String badge = "ESC";
-        int badgeX   = bx + BOX_W - textRenderer.getWidth(badge) - 10;
-        int badgeY   = by + (INPUT_H - textRenderer.fontHeight) / 2;
+        int badgeX = bx + BOX_W - textRenderer.getWidth(badge) - 10;
+        int badgeY = by + (INPUT_H - textRenderer.fontHeight) / 2;
         ctx.fill(badgeX - 4, badgeY - 2,
                  badgeX + textRenderer.getWidth(badge) + 4, badgeY + textRenderer.fontHeight + 2, C_BORDER);
         ctx.drawTextWithShadow(textRenderer, Text.literal(badge), badgeX, badgeY, C_SUB);
         ctx.fill(bx, by + INPUT_H, bx + BOX_W, by + INPUT_H + 1, C_BORDER);
 
         // ── Result area ───────────────────────────────────────────────────
-        int ry0 = by + INPUT_H + 1;
-        int resultAreaH = MAX_RESULTS * ROW_H; // her zaman sabit yükseklik rezerve
+        int ry0         = by + INPUT_H + 1;
+        int resultAreaH = MAX_RESULTS * ROW_H;
 
         if (q.isBlank()) {
-            String hint = "Aramak istediğin itemi yaz...";
-            ctx.drawCenteredTextWithShadow(textRenderer, Text.literal(hint),
+            ctx.drawCenteredTextWithShadow(textRenderer,
+                    Text.translatable("chestmemory.search.hint"),
                     bx + BOX_W / 2, ry0 + (resultAreaH - textRenderer.fontHeight) / 2, C_SUB);
         } else if (results.isEmpty()) {
-            String hint = "Hiçbir sandıkta bulunamadı.";
-            ctx.drawCenteredTextWithShadow(textRenderer, Text.literal(hint),
+            ctx.drawCenteredTextWithShadow(textRenderer,
+                    Text.translatable("chestmemory.search.empty"),
                     bx + BOX_W / 2, ry0 + (resultAreaH - textRenderer.fontHeight) / 2, C_SUB);
         } else {
             MinecraftClient mc = MinecraftClient.getInstance();
@@ -158,33 +144,33 @@ public class SearchOverlay extends Screen {
 
                 int iconX = bx + 8, iconY = rowY + (ROW_H - 18) / 2;
                 ctx.fill(iconX, iconY, iconX + 18, iconY + 18, dim ? 0xFF2a2a2a : C_BORDER);
-
                 ItemStack stack = r.firstItem() != null ? getStack(r.firstItem().getItemId()) : ItemStack.EMPTY;
                 if (!stack.isEmpty() && !dim) ctx.drawItem(stack, iconX + 1, iconY + 1);
 
-                int textX   = iconX + 22;
-                int nameY   = rowY + 7;
-                int subY    = rowY + 19;
+                int textX = iconX + 22, nameY = rowY + 7, subY = rowY + 19;
 
                 String name = r.firstItem() != null && r.firstItem().getDisplayName() != null
-                        ? r.firstItem().getDisplayName() : "Bilinmiyor";
+                        ? r.firstItem().getDisplayName()
+                        : Text.translatable("chestmemory.item.unknown").getString();
                 if (r.matchedItems.size() > 1) {
-                    long types = r.matchedItems.stream()
-                            .map(ChestItem::getItemId).distinct().count();
-                    if (types > 1) name = types + " farklı item";
+                    long types = r.matchedItems.stream().map(ChestItem::getItemId).distinct().count();
+                    if (types > 1) name = types + Text.translatable("chestmemory.item.multi").getString();
                 }
-                String chest = ChestStorage.getInstance().getDisplayName(r.chest);
-                String sub   = chest + " · " + r.chest.getX() + ", "
-                             + r.chest.getY() + ", " + r.chest.getZ();
+                String chestName = ChestStorage.getInstance().getDisplayName(r.chest);
+                String sub       = chestName + " · " + r.chest.getX() + ", "
+                                 + r.chest.getY() + ", " + r.chest.getZ();
 
                 int tc = dim ? C_DIM_TEXT : C_TEXT;
                 int sc = dim ? C_DIM_TEXT : C_SUB;
                 ctx.drawTextWithShadow(textRenderer, Text.literal(name), textX, nameY, tc);
                 ctx.drawTextWithShadow(textRenderer, Text.literal(sub),  textX, subY,  sc);
 
-                String countStr = r.totalCount + "x";
-                String distStr  = dim ? "Farklı boyut"
-                        : ((int) r.distance) + " blok " + dirArrow(r.chest, mc);
+                String countStr = r.totalCount + Text.translatable("chestmemory.item.count_unit").getString();
+                String distStr  = dim
+                        ? Text.translatable("chestmemory.records.different_dimension").getString()
+                        : ((int) r.distance)
+                          + Text.translatable("chestmemory.item.dist_unit").getString()
+                          + dirArrow(r.chest, mc);
                 int rightX = bx + BOX_W
                         - Math.max(textRenderer.getWidth(countStr), textRenderer.getWidth(distStr)) - 10;
                 ctx.drawTextWithShadow(textRenderer, Text.literal(countStr), rightX, nameY,
@@ -201,15 +187,11 @@ public class SearchOverlay extends Screen {
         int footerY = by + BOX_H - FOOTER_H;
         ctx.fill(bx, footerY, bx + BOX_W, footerY + 1, C_BORDER);
         ctx.fill(bx, footerY + 1, bx + BOX_W, by + BOX_H, 0xFF0e1014);
-        int fx = bx + 10;
-        int fy = footerY + (FOOTER_H - textRenderer.fontHeight) / 2;
+        int fx = bx + 10, fy = footerY + (FOOTER_H - textRenderer.fontHeight) / 2;
         ctx.drawTextWithShadow(textRenderer, Text.literal("↑↓"), fx, fy, C_SUB);
-        ctx.drawTextWithShadow(textRenderer, Text.literal(" Seç   "),
-                fx + textRenderer.getWidth("↑↓"), fy, 0xFF2a2a2a);
-        ctx.drawTextWithShadow(textRenderer, Text.literal("Enter"),
-                fx + textRenderer.getWidth("↑↓ Seç   "), fy, C_SUB);
-        ctx.drawTextWithShadow(textRenderer, Text.literal(" Yön göster"),
-                fx + textRenderer.getWidth("↑↓ Seç   Enter"), fy, 0xFF2a2a2a);
+        ctx.drawTextWithShadow(textRenderer, Text.literal(" Seç   "), fx + textRenderer.getWidth("↑↓"), fy, 0xFF2a2a2a);
+        ctx.drawTextWithShadow(textRenderer, Text.literal("Enter"), fx + textRenderer.getWidth("↑↓ Seç   "), fy, C_SUB);
+        ctx.drawTextWithShadow(textRenderer, Text.literal(" Yön göster"), fx + textRenderer.getWidth("↑↓ Seç   Enter"), fy, 0xFF2a2a2a);
 
         super.render(ctx, mouseX, mouseY, delta);
     }

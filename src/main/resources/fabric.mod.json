@@ -3,7 +3,7 @@
   "id": "chestmemory",
   "version": "${version}",
   "name": "ChestMemory",
-  "description": "Automatically indexes your chests and lets you search items by name with a compass navigator.",
+  "description": "ChestMemory automatically indexes every chest you open, so you can instantly search for any item and navigate directly to it — no more opening every chest to find what you need.",
   "authors": [
     "Muhofy"
   ],

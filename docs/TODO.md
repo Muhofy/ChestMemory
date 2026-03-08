@@ -155,20 +155,20 @@
 
 ## 🎨 PHASE 6 — HUD Overlay
 
-- [ ] `ChestMemoryHud.java` oluştur (`HudRenderCallback` implement)
-- [ ] **Toast sistemi:**
-  - [ ] Toast kuyruğu: `Queue<Toast>`
-  - [ ] Her toast 2 saniye görünür
-  - [ ] Slide-in animasyonu
-  - [ ] `config.toastPosition`'a göre köşeye yerleştir
-  - [ ] Toast tipleri: SUCCESS (yeşil), INFO (mavi)
-- [ ] **Pusula widget (yön göstergesi):**
-  - [ ] Aktif hedef: `ChestRecord activeTarget`
-  - [ ] `config.compassPosition`'a göre köşeye yerleştir
-  - [ ] İçerik: `📦 [Sandık adı] • [X] blok` + dönen ok
-  - [ ] Hedefe **5 blok** kalınca: `✅ Hedefe ulaştın!` toast + widget kaybolur
-  - [ ] `setTarget(ChestRecord)` → yeni hedef atar
-  - [ ] `clearTarget()` → hedefi temizler
+- [x] `ChestMemoryHud.java` oluştur (`HudRenderCallback` implement)
+- [x] **Toast sistemi:**
+  - [x] Toast kuyruğu: `Queue<Toast>`
+  - [x] Her toast 2 saniye görünür
+  - [x] Slide-in animasyonu
+  - [x] `config.toastPosition`'a göre köşeye yerleştir
+  - [x] Toast tipleri: SUCCESS (yeşil), INFO (mavi)
+- [x] **Pusula widget (yön göstergesi):**
+  - [x] Aktif hedef: `ChestRecord activeTarget`
+  - [x] `config.compassPosition`'a göre köşeye yerleştir
+  - [x] İçerik: `📦 [Sandık adı] • [X] blok` + dönen ok
+  - [x] Hedefe **5 blok** kalınca: `✅ Hedefe ulaştın!` toast + widget kaybolur
+  - [x] `setTarget(ChestRecord)` → yeni hedef atar
+  - [x] `clearTarget()` → hedefi temizler
 
 ---
 

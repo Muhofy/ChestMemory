@@ -46,17 +46,15 @@ public class ChestOpenHandler {
 
             World world = client.world;
             if (world == null) return;
-            String dimension = world.getRegistryKey().getValue().toString();
-
-            // Double chest ise canonical (sol/küçük koordinat) pozisyonu bul
-            BlockPos canonicalPos = isDouble ? getCanonicalPos(client, hitPos) : hitPos;
+            String dimension  = world.getRegistryKey().getValue().toString();
+            BlockPos canonical = isDouble ? getCanonicalPos(client, hitPos) : hitPos;
 
             indexedThisOpen = false;
 
             ScreenEvents.afterTick(screen).register(tickedScreen -> {
                 if (indexedThisOpen) return;
                 indexedThisOpen = true;
-                indexChest(client, handler, canonicalPos, dimension, slotCount, isDouble);
+                indexChest(client, handler, canonical, dimension, slotCount, isDouble);
             });
         });
 
@@ -68,7 +66,6 @@ public class ChestOpenHandler {
                                    BlockPos pos, String dimension,
                                    int slotCount, boolean isDouble) {
         List<ChestItem> newItems = new ArrayList<>();
-
         for (int i = 0; i < slotCount; i++) {
             Slot slot = handler.getSlot(i);
             ItemStack stack = slot.getStack();
@@ -81,16 +78,16 @@ public class ChestOpenHandler {
             ));
         }
 
-        // Boş sandık — sessizce kaydet, toast yok
+        ChestStorage storage  = ChestStorage.getInstance();
+
+        // Boş sandık — sessizce kaydet
         if (newItems.isEmpty()) {
-            ChestStorage.getInstance().addOrUpdate(
-                    pos.getX(), pos.getY(), pos.getZ(), dimension, newItems, isDouble);
+            storage.addOrUpdate(pos.getX(), pos.getY(), pos.getZ(), dimension, newItems, isDouble);
             ChestMemoryMod.LOGGER.info("[ChestOpenHandler] Empty chest at {}, indexed silently.", pos);
             return;
         }
 
-        ChestStorage storage   = ChestStorage.getInstance();
-        ChestRecord  existing  = storage.getAt(pos.getX(), pos.getY(), pos.getZ(), dimension);
+        ChestRecord existing = storage.getAt(pos.getX(), pos.getY(), pos.getZ(), dimension);
 
         // İçerik değişmemişse atla
         if (existing != null && itemsEqual(existing.getItems(), newItems)) {
@@ -106,52 +103,34 @@ public class ChestOpenHandler {
                 isNew ? "Indexed" : "Updated", isDouble ? "double" : "single", pos, newItems.size());
 
         if (ChestMemoryConfig.getInstance().toastEnabled) {
-            String name = storage.getDisplayName(record);
-            ChestMemoryHud.pushToast(
-                    isNew ? "Sandık indexlendi" : "Sandık güncellendi",
-                    name + " • " + newItems.size() + " item",
+            String name       = storage.getDisplayName(record);
+            String titleKey   = isNew ? "chestmemory.toast.indexed" : "chestmemory.toast.updated";
+            String subtitle   = name + " • " + newItems.size() + " item";
+            ChestMemoryHud.pushToast(titleKey, subtitle,
                     isNew ? ChestMemoryHud.ToastType.SUCCESS : ChestMemoryHud.ToastType.INFO);
         }
     }
 
-    /**
-     * Double chest'in iki bloğundan her zaman aynı (canonical) pozisyonu döndürür.
-     * Minecraft'ta double chest: LEFT ve RIGHT olmak üzere iki blok.
-     * Biz her zaman LEFT tarafı canonical kabul ediyoruz.
-     * Eğer oyuncu RIGHT tarafa tıkladıysa, LEFT tarafın pozisyonunu hesapla.
-     */
     private static BlockPos getCanonicalPos(MinecraftClient client, BlockPos hitPos) {
         if (client.world == null) return hitPos;
-
         var blockState = client.world.getBlockState(hitPos);
         if (!(blockState.getBlock() instanceof ChestBlock)) return hitPos;
-
         ChestType chestType = blockState.get(ChestBlock.CHEST_TYPE);
-
-        // Tek sandık veya zaten LEFT — olduğu gibi kullan
         if (chestType == ChestType.SINGLE || chestType == ChestType.LEFT) return hitPos;
-
-        // RIGHT ise — LEFT tarafını bul (komşu blok)
-        // LEFT tarafın yönü: ChestBlock.getFacing() + ChestType yönünden hesaplanır
-        var facing    = ChestBlock.getFacing(blockState);
-        var leftDir   = chestType == ChestType.RIGHT ? facing.rotateYCounterclockwise() : facing.rotateYClockwise();
+        var facing   = ChestBlock.getFacing(blockState);
+        var leftDir  = facing.rotateYCounterclockwise();
         BlockPos leftPos = hitPos.offset(leftDir);
-
-        // Sol taraf gerçekten chest mi?
-        if (client.world.getBlockEntity(leftPos) instanceof ChestBlockEntity) {
-            return leftPos;
-        }
-
-        return hitPos; // fallback
+        if (client.world.getBlockEntity(leftPos) instanceof ChestBlockEntity) return leftPos;
+        return hitPos;
     }
 
     private static boolean itemsEqual(List<ChestItem> a, List<ChestItem> b) {
         if (a.size() != b.size()) return false;
         for (int i = 0; i < a.size(); i++) {
             ChestItem ia = a.get(i), ib = b.get(i);
-            if (ia.getSlot()  != ib.getSlot())           return false;
-            if (ia.getCount() != ib.getCount())          return false;
-            if (!ia.getItemId().equals(ib.getItemId()))  return false;
+            if (ia.getSlot()  != ib.getSlot())          return false;
+            if (ia.getCount() != ib.getCount())         return false;
+            if (!ia.getItemId().equals(ib.getItemId())) return false;
         }
         return true;
     }
