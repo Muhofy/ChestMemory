@@ -16,36 +16,38 @@ import java.util.stream.Collectors;
 
 public class ChestStorage {
 
-    // ── Singleton ─────────────────────────────────────────────────────────
     private static final ChestStorage INSTANCE = new ChestStorage();
     public static ChestStorage getInstance() { return INSTANCE; }
     private ChestStorage() {}
 
-    // ── State ─────────────────────────────────────────────────────────────
-    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private final Gson             gson    = new GsonBuilder().setPrettyPrinting().create();
     private final List<ChestRecord> chests = new ArrayList<>();
     private String currentWorld = null;
 
-    // ── SearchResult inner class ──────────────────────────────────────────
+    // ── SearchResult ──────────────────────────────────────────────────────
     public static class SearchResult {
-        public final ChestRecord chest;
-        public final ChestItem   item;
-        public final double      distance;
+        public final ChestRecord     chest;
+        public final List<ChestItem> matchedItems;
+        public final int             totalCount;
+        public final double          distance;
 
-        public SearchResult(ChestRecord chest, ChestItem item, double distance) {
-            this.chest    = chest;
-            this.item     = item;
-            this.distance = distance;
+        public SearchResult(ChestRecord chest, List<ChestItem> matched, double distance) {
+            this.chest        = chest;
+            this.matchedItems = matched;
+            this.totalCount   = matched.stream().mapToInt(ChestItem::getCount).sum();
+            this.distance     = distance;
+        }
+
+        public ChestItem firstItem() {
+            return matchedItems.isEmpty() ? null : matchedItems.get(0);
         }
     }
 
-    // ── Init ──────────────────────────────────────────────────────────────
+    // ── Init / World ──────────────────────────────────────────────────────
     public void init() {
-        // İlk başlatma — dünya bağlanınca loadWorld() çağrılacak
         ChestMemoryMod.LOGGER.info("[ChestStorage] Initialized.");
     }
 
-    // ── Dünya değişimi ────────────────────────────────────────────────────
     public void loadWorld(String worldName) {
         if (worldName.equals(currentWorld)) return;
         currentWorld = worldName;
@@ -61,16 +63,18 @@ public class ChestStorage {
 
     // ── CRUD ──────────────────────────────────────────────────────────────
 
-    /** Koordinata göre güncelle, yoksa ekle */
-    public ChestRecord addOrUpdate(int x, int y, int z, String dimension, List<ChestItem> items) {
+    /** isDouble parametresi eklendi */
+    public ChestRecord addOrUpdate(int x, int y, int z, String dimension,
+                                   List<ChestItem> items, boolean isDouble) {
         ChestRecord existing = getAt(x, y, z, dimension);
         if (existing != null) {
             existing.setItems(items);
+            existing.setDouble(isDouble);
             existing.touchUpdated();
             save();
             return existing;
         }
-        ChestRecord rec = new ChestRecord(x, y, z, dimension);
+        ChestRecord rec = new ChestRecord(x, y, z, dimension, isDouble);
         rec.setItems(items);
         chests.add(rec);
         save();
@@ -89,8 +93,7 @@ public class ChestStorage {
               .ifPresent(c -> { c.setCustomName(newName); save(); });
     }
 
-    // ── Sorgular ─────────────────────────────────────────────────────────
-
+    // ── Queries ───────────────────────────────────────────────────────────
     public ChestRecord getAt(int x, int y, int z, String dimension) {
         return chests.stream()
                      .filter(c -> c.getX() == x && c.getY() == y && c.getZ() == z
@@ -108,28 +111,24 @@ public class ChestStorage {
                      .collect(Collectors.toList());
     }
 
-    /**
-     * Tüm sandıklarda item displayName veya itemId içinde query geçiyorsa döndür.
-     * Aktif boyuttakiler önce, mesafeye göre sıralı.
-     */
     public List<SearchResult> searchItems(String query, String activeDimension, double px, double pz) {
         if (query == null || query.isBlank()) return List.of();
         String q = query.toLowerCase(Locale.ROOT).trim();
 
         List<SearchResult> results = new ArrayList<>();
         for (ChestRecord chest : chests) {
+            List<ChestItem> matched = new ArrayList<>();
             for (ChestItem item : chest.getItems()) {
                 boolean nameMatch = item.getDisplayName() != null
                         && item.getDisplayName().toLowerCase(Locale.ROOT).contains(q);
                 boolean idMatch   = item.getItemId() != null
                         && item.getItemId().toLowerCase(Locale.ROOT).contains(q);
-                if (nameMatch || idMatch) {
-                    results.add(new SearchResult(chest, item, chest.distanceTo(px, pz)));
-                }
+                if (nameMatch || idMatch) matched.add(item);
             }
+            if (!matched.isEmpty())
+                results.add(new SearchResult(chest, matched, chest.distanceTo(px, pz)));
         }
 
-        // Aktif boyut önce, sonra mesafe artan
         results.sort(Comparator
                 .<SearchResult, Boolean>comparing(r -> !r.chest.isInDimension(activeDimension))
                 .thenComparingDouble(r -> r.distance));
@@ -137,35 +136,29 @@ public class ChestStorage {
         return results;
     }
 
-    /** Arama overlay için displayName üret (index numarası için liste sırasını kullan) */
     public String getDisplayName(ChestRecord rec) {
         int idx = chests.indexOf(rec) + 1;
         return rec.getDisplayName(idx);
     }
 
     // ── Disk I/O ──────────────────────────────────────────────────────────
-
     private void save() {
         if (currentWorld == null) return;
         writeToDisk(currentWorld, chests);
     }
 
     private Path getFilePath(String worldName) {
-        // Güvenli dosya adı: özel karakterleri temizle
         String safe = worldName.replaceAll("[^a-zA-Z0-9._\\-]", "_");
         return FabricLoader.getInstance().getConfigDir()
-                           .resolve("chestmemory")
-                           .resolve(safe)
-                           .resolve("chests.json");
+                           .resolve("chestmemory").resolve(safe).resolve("chests.json");
     }
 
     private List<ChestRecord> readFromDisk(String worldName) {
         Path file = getFilePath(worldName);
         if (!Files.exists(file)) return new ArrayList<>();
-
         try (Reader r = Files.newBufferedReader(file)) {
-            JsonObject root = JsonParser.parseReader(r).getAsJsonObject();
-            Type listType  = new TypeToken<List<ChestRecord>>(){}.getType();
+            JsonObject root    = JsonParser.parseReader(r).getAsJsonObject();
+            Type       listType = new TypeToken<List<ChestRecord>>(){}.getType();
             List<ChestRecord> loaded = gson.fromJson(root.get("chests"), listType);
             return loaded != null ? loaded : new ArrayList<>();
         } catch (Exception e) {
