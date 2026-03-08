@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "chestmemory",
+  "version": "${version}",
+  "name": "ChestMemory",
+  "description": "Automatically indexes your chests and lets you search items by name with a compass navigator.",
+  "authors": [
+    "Muhofy"
+  ],
+  "contact": {
+    "sources": "https://github.com/muhofy/chestmemory"
+  },
+  "license": "MIT",
+  "icon": "assets/chestmemory/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.muhofy.chestmemory.ChestMemoryMod"
+    ]
+  },
+  "mixins": [
+    "chestmemory.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "fabric-api": "*",
+    "minecraft": "~1.21.11",
+    "java": ">=21"
+  }
+}
