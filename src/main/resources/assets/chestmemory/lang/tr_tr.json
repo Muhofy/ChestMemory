@@ -1,1 +1,5 @@
-{}
+{
+  "category.chestmemory": "ChestMemory",
+  "key.chestmemory.search": "Aramayı Aç",
+  "key.chestmemory.records": "Sandık Kayıtlarını Aç"
+}

@@ -1,1 +1,5 @@
-{}
+{}{
+  "category.chestmemory": "ChestMemory",
+  "key.chestmemory.search": "Open Search",
+  "key.chestmemory.records": "Open Chest Records"
+}
