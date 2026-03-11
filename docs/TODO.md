@@ -174,22 +174,22 @@
 
 ## 🌍 PHASE 7 — Lokalizasyon
 
-- [ ] `assets/chestmemory/lang/en_us.json` oluştur
-- [ ] `assets/chestmemory/lang/tr_tr.json` oluştur
-- [ ] Key listesi:
-  - [ ] `chestmemory.toast.indexed`
-  - [ ] `chestmemory.toast.updated`
-  - [ ] `chestmemory.toast.arrived`
-  - [ ] `chestmemory.screen.search.placeholder`
-  - [ ] `chestmemory.screen.search.empty`
-  - [ ] `chestmemory.screen.records.title`
-  - [ ] `chestmemory.screen.records.empty`
-  - [ ] `chestmemory.screen.records.different_dimension`
-  - [ ] `chestmemory.screen.records.btn.navigate`
-  - [ ] `chestmemory.screen.records.btn.delete`
-  - [ ] `chestmemory.screen.records.confirm_delete`
-  - [ ] `chestmemory.key.search`
-  - [ ] `chestmemory.key.records`
+- [x] `assets/chestmemory/lang/en_us.json` oluştur
+- [x] `assets/chestmemory/lang/tr_tr.json` oluştur
+- [x] Key listesi:
+  - [x] `chestmemory.toast.indexed`
+  - [x] `chestmemory.toast.updated`
+  - [x] `chestmemory.toast.arrived`
+  - [x] `chestmemory.screen.search.placeholder`
+  - [x] `chestmemory.screen.search.empty`
+  - [x] `chestmemory.screen.records.title`
+  - [x] `chestmemory.screen.records.empty`
+  - [x] `chestmemory.screen.records.different_dimension`
+  - [x] `chestmemory.screen.records.btn.navigate`
+  - [x] `chestmemory.screen.records.btn.delete`
+  - [x] `chestmemory.screen.records.confirm_delete`
+  - [x] `chestmemory.key.search`
+  - [x] `chestmemory.key.records`
 
 ---
 
@@ -217,18 +217,18 @@
 
 ## 📦 PHASE 9 — Yayın Hazırlığı
 
-- [ ] `README.md` yaz (İngilizce, Modrinth için):
-  - [ ] Mod ne yapar (kısa açıklama)
-  - [ ] Nasıl kullanılır (keybindler: F, G)
-  - [ ] Ekran görüntüleri
-  - [ ] Config açıklaması
-- [ ] Modrinth için banner görseli hazırla (1280x640)
-- [ ] Ekran görüntüleri çek (SearchOverlay, ChestRecordsScreen, Toast, Pusula)
-- [ ] `build.gradle`'da versiyon `1.0.0` doğrula
-- [ ] `gradle build` ile JAR üret
-- [ ] JAR'ı Minecraft'ta son kez test et
-- [ ] Modrinth'e yükle (Fabric, 1.21.4, client-side only)
-- [ ] CurseForge'a yükle
+- [x] `README.md` yaz (İngilizce, Modrinth için):
+  - [x] Mod ne yapar (kısa açıklama)
+  - [x] Nasıl kullanılır (keybindler: F, G)
+  - [x] Ekran görüntüleri
+  - [x] Config açıklaması
+- [x] Modrinth için banner görseli hazırla (1280x640)
+- [x] Ekran görüntüleri çek (SearchOverlay, ChestRecordsScreen, Toast, Pusula)
+- [x] `build.gradle`'da versiyon `1.0.0` doğrula
+- [x] `gradle build` ile JAR üret
+- [x] JAR'ı Minecraft'ta son kez test et
+- [x] Modrinth'e yükle (Fabric, 1.21.4, client-side only)
+- [] CurseForge'a yükle
 
 ---
 

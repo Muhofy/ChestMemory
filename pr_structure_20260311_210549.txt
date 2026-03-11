@@ -1,5 +1,5 @@
 Proje Kök Dizini: /data/data/com.termux/files/home/ChestMemory
-Oluşturulma Tarihi: 2026-03-08 17:50:54
+Oluşturulma Tarihi: 2026-03-11 21:05:49
 ----------------------------------------
 .
  |-- gradlew
@@ -43,20 +43,14 @@ Oluşturulma Tarihi: 2026-03-08 17:50:54
                       |-- SearchOverlay.java
                       |-- ChestRecordsScreen.java
     |-- client
-       |-- resources
-          |-- chest-memory.client.mixins.json
-       |-- java
-          |-- com
-             |-- muhofy
-                |-- chestmemory
-                   |-- mixin
-                      |-- client
-                         |-- ExampleClientMixin.java
-                   |-- ChestMemoryClient.java
- |-- LICENSE
+ |-- screenshots
+    |-- search_overlay.png
+    |-- hud_compass.png
+    |-- chest_records.png
  |-- docs
     |-- MEMORYBANK.md
     |-- TODO.md
+    |-- MODRINTH_INFO.md
  |-- build
     |-- loom-cache
        |-- remapped_working
@@ -167,19 +161,20 @@ Oluşturulma Tarihi: 2026-03-08 17:50:54
                       |-- data
                          |-- ChestItem.class
                          |-- ChestRecord.class
+                         |-- ChestStorage$SearchResult.class
                          |-- ChestStorage$1.class
                          |-- ChestStorage.class
-                         |-- ChestStorage$SearchResult.class
                       |-- handler
                          |-- KeyHandler.class
                          |-- ChestOpenHandler.class
                          |-- WorldEventHandler.class
                       |-- ChestMemoryMod.class
                       |-- ui
+                         |-- ChestMemoryHud$ToastType.class
+                         |-- ChestMemoryHud$Toast.class
+                         |-- ChestMemoryHud.class
                          |-- SearchOverlay.class
                          |-- ChestRecordsScreen.class
-                         |-- ChestMemoryHud.class
-                         |-- ChestMemoryHud$ToastType.class
     |-- generated
        |-- sources
           |-- annotationProcessor
@@ -193,6 +188,14 @@ Oluşturulma Tarihi: 2026-03-08 17:50:54
           |-- previous-compilation-data.bin
           |-- compileTransaction
              |-- stash-dir
+                |-- KeyHandler.class.uniqueId0
+                |-- SearchOverlay.class.uniqueId1
+                |-- ChestOpenHandler.class.uniqueId2
+                |-- ChestRecordsScreen.class.uniqueId3
+                |-- ChestMemoryHud.class.uniqueId4
+                |-- ChestMemoryMod.class.uniqueId5
+                |-- ChestMemoryHud$Toast.class.uniqueId6
+                |-- ChestMemoryHud$ToastType.class.uniqueId7
              |-- backup-dir
        |-- jar
           |-- MANIFEST.MF
@@ -220,11 +223,9 @@ Oluşturulma Tarihi: 2026-03-08 17:50:54
        |-- chestmemory-1.0.0-sources.jar
     |-- processIncludeJars
     |-- libs
-       |-- chestmemory-1.0.0.jar
+       |-- chestmemory-1.21.11-1.0.0.jar
        |-- chestmemory-1.0.0-sources.jar
-       |-- versions
-          |-- chestmemory-1.0.0.jar
-          |-- chestmemory-1.0.0-sources.jar
+       |-- chestmemory-1.0.0.jar
  |-- run
     |-- resources
     |-- logs
@@ -241,7 +242,9 @@ Oluşturulma Tarihi: 2026-03-08 17:50:54
     |-- options.txt
     |-- crash-reports
        |-- crash-2026-03-08_10.41.26-client.txt
- |-- cfr.jar
- |-- Screen.java
+ |-- README.md
+ |-- tools
+    |-- compass_concepts.html
+    |-- ui_mockup.html
  |-- structure.sh
- |-- pr_structure_20260308_175054.txt
+ |-- pr_structure_20260311_210549.txt
