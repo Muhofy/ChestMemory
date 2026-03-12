@@ -18,21 +18,14 @@ import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * ChestRecordsScreen — kompakt popup (~500x340)
- * Sol panel: sandık listesi | Sağ panel: slot grid + butonlar
- */
 public class ChestRecordsScreen extends Screen {
 
-    // ── Popup dimensions ──────────────────────────────────────────────────
-    private static final int POP_W   = 500;
-    private static final int POP_H   = 340;
-    private static final int LEFT_W  = 160;  // sol liste genişliği
-    private static final int TITLE_H = 20;
-    private static final int FOOT_H  = 28;
-    private static final int ROW_H   = 34;
-    private static final int SLOT_S  = 16;   // slot boyutu (küçük)
-    private static final int SLOT_G  = 1;    // slot gap
+    // ── Vanilla GUI texture (inventory background) ────────────────────────
+    private static final Identifier WIDGETS_TEX =
+            Identifier.of("textures/gui/widgets.png");
+    // Inventory/chest container texture
+    private static final Identifier CONTAINER_TEX =
+            Identifier.of("textures/gui/container/inventory.png");
 
     // ── Vanilla colors ────────────────────────────────────────────────────
     private static final int C_BG       = 0xFFC6C6C6;
@@ -47,28 +40,35 @@ public class ChestRecordsScreen extends Screen {
     private static final int C_ROW_BG   = 0xFF8B8B8B;
     private static final int C_ROW_SEL  = 0xFF9E9E9E;
     private static final int C_TEXT     = 0xFFFFFFFF;
-    private static final int C_TEXT_DK  = 0xFF3F3F3F;
     private static final int C_TEXT_GR  = 0xFFAAAAAA;
     private static final int C_TEXT_DIM = 0xFF666666;
     private static final int C_YELLOW   = 0xFFFFFF55;
     private static final int C_CYAN     = 0xFF55FFFF;
     private static final int C_GREEN    = 0xFF55AA00;
     private static final int C_RED      = 0xFFFF5555;
+    private static final int C_TITLE    = 0xFF404040;
+
+    // ── Layout (dinamik, init'te hesaplanır) ──────────────────────────────
+    private static final int TITLE_H = 20;
+    private static final int FOOT_H  = 30;
+    private static final int ROW_H   = 36;
+    private static final int SLOT_S  = 16;
+    private static final int SLOT_G  = 1;
+
+    private int POP_W, POP_H, LEFT_W;
+    private int px, py;
 
     // ── State ─────────────────────────────────────────────────────────────
     private List<ChestRecord> chests = new ArrayList<>();
-    private int  selIdx        = 0;
-    private int  scrollOffset  = 0;
-    private int  renamingIdx   = -1;
+    private int  selIdx       = 0;
+    private int  scrollOffset = 0;
+    private int  renamingIdx  = -1;
     private boolean confirmDel = false;
 
     private TextFieldWidget  renameField;
     private ButtonWidget     btnNav, btnDel, btnYes, btnNo;
     private final List<ButtonWidget> rowBtns    = new ArrayList<>();
     private final List<ButtonWidget> renameBtns = new ArrayList<>();
-
-    // Popup top-left
-    private int px, py;
 
     public ChestRecordsScreen() {
         super(Text.translatable("chestmemory.records.title"));
@@ -77,33 +77,36 @@ public class ChestRecordsScreen extends Screen {
     // ── Init ──────────────────────────────────────────────────────────────
     @Override
     protected void init() {
+        // Ekran boyutuna göre popup boyutunu hesapla
+        // SearchOverlay ile benzer his: ekranın ~%60'ı genişlik, ~%70'i yükseklik
+        POP_W  = Math.min(500, (int)(width  * 0.62f));
+        POP_H  = Math.min(340, (int)(height * 0.72f));
+        LEFT_W = (int)(POP_W * 0.33f); // sol liste ~%33
+
         px = (width  - POP_W) / 2;
         py = (height - POP_H) / 2;
+
         refreshChests();
         buildActionButtons();
         buildRowButtons();
     }
 
+    // ── Buttons ───────────────────────────────────────────────────────────
     private void buildActionButtons() {
         int rpX  = px + LEFT_W + 3;
         int rpW  = POP_W - LEFT_W - 3;
         int btnY = py + POP_H - FOOT_H + (FOOT_H - 16) / 2;
 
-        // İkon varsa PNG, yoksa unicode prefix
-        IconManager im = IconManager.get();
-        String navLabel = (im.hasPng("navigate") ? "  " : im.fallback("navigate") + "  ")
-                        + Text.translatable("chestmemory.records.btn.navigate").getString();
-        String delLabel = (im.hasPng("delete")   ? "  " : im.fallback("delete")   + "  ")
-                        + Text.translatable("chestmemory.records.btn.delete").getString();
-
-        btnNav = btn(Text.literal(navLabel),  b -> doNavigate(), rpX + 6,           btnY, 100, 16);
-        btnDel = btn(Text.literal(delLabel),  b -> { confirmDel = true; syncBtns(); },
-                     rpX + rpW - 94,           btnY, 88,  16);
+        btnNav = btn(Text.translatable("chestmemory.records.btn.navigate"),
+                b -> doNavigate(), rpX + 6, btnY, 100, 16);
+        btnDel = btn(Text.translatable("chestmemory.records.btn.delete"),
+                b -> { confirmDel = true; syncBtns(); },
+                rpX + rpW - 88, btnY, 82, 16);
         btnYes = btn(Text.translatable("chestmemory.records.btn.confirm_yes"),
-                     b -> doDelete(),          rpX + rpW / 2 - 56, btnY, 52, 16);
+                b -> doDelete(), rpX + rpW / 2 - 54, btnY, 52, 16);
         btnNo  = btn(Text.translatable("chestmemory.records.btn.confirm_no"),
-                     b -> { confirmDel = false; syncBtns(); },
-                     rpX + rpW / 2 + 2,        btnY, 52, 16);
+                b -> { confirmDel = false; syncBtns(); },
+                rpX + rpW / 2 + 2, btnY, 52, 16);
 
         addDrawableChild(btnNav);
         addDrawableChild(btnDel);
@@ -112,9 +115,8 @@ public class ChestRecordsScreen extends Screen {
         syncBtns();
     }
 
-    private ButtonWidget btn(Text label, ButtonWidget.PressAction action,
-                              int x, int y, int w, int h) {
-        return ButtonWidget.builder(label, action).dimensions(x, y, w, h).build();
+    private ButtonWidget btn(Text lbl, ButtonWidget.PressAction a, int x, int y, int w, int h) {
+        return ButtonWidget.builder(lbl, a).dimensions(x, y, w, h).build();
     }
 
     private void buildRowButtons() {
@@ -131,21 +133,17 @@ public class ChestRecordsScreen extends Screen {
             final int pos = i;
             int ry = listY + i * ROW_H;
 
-            // Satır seçme butonu (şeffaf)
             ButtonWidget sel = ButtonWidget.builder(Text.empty(), b -> {
                 int idx = scrollOffset + pos;
                 if (idx < chests.size()) {
-                    selIdx = idx;
-                    cancelRename();
-                    confirmDel = false;
-                    syncBtns();
+                    selIdx = idx; cancelRename();
+                    confirmDel = false; syncBtns();
                 }
             }).dimensions(px, ry, LEFT_W - 18, ROW_H).build();
             sel.setAlpha(0f);
             rowBtns.add(sel);
             addDrawableChild(sel);
 
-            // Rename butonu (sağ kenarda, şeffaf)
             ButtonWidget ren = ButtonWidget.builder(Text.empty(), b -> {
                 int idx = scrollOffset + pos;
                 if (idx < chests.size()) startRename(idx);
@@ -172,12 +170,11 @@ public class ChestRecordsScreen extends Screen {
     // ── Render ────────────────────────────────────────────────────────────
     @Override
     public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
-        // Dim background
+        // Dim
         ctx.fill(0, 0, width, height, 0x88000000);
-        // Outer bevel
-        bevel(ctx, px - 2, py - 2, POP_W + 4, POP_H + 4);
-        // Panel bg
-        ctx.fill(px, py, px + POP_W, py + POP_H, C_BG);
+
+        // ── Ana panel (vanilla inventory tarzı raised panel) ──────────────
+        drawVanillaPanel(ctx, px, py, POP_W, POP_H);
 
         renderTitleBar(ctx);
         renderLeftPanel(ctx, mouseX, mouseY);
@@ -187,168 +184,188 @@ public class ChestRecordsScreen extends Screen {
         super.render(ctx, mouseX, mouseY, delta);
     }
 
+    // ── Vanilla raised panel ──────────────────────────────────────────────
+    private void drawVanillaPanel(DrawContext ctx, int x, int y, int w, int h) {
+        // İç dolgu
+        ctx.fill(x + 2, y + 2, x + w - 2, y + h - 2, C_BG);
+        // Üst kenar (açık)
+        ctx.fill(x,     y,     x + w, y + 2,   C_LT);
+        // Sol kenar (açık)
+        ctx.fill(x,     y,     x + 2, y + h,   C_LT);
+        // Sağ kenar (koyu)
+        ctx.fill(x + w - 2, y, x + w, y + h,   C_DK);
+        // Alt kenar (koyu)
+        ctx.fill(x,     y + h - 2, x + w, y + h, C_DK);
+        // Köşe düzeltme
+        ctx.fill(x,         y + h - 2, x + 2,     y + h, C_BG);
+        ctx.fill(x + w - 2, y,         x + w,     y + 2, C_BG);
+    }
+
     // ── Title bar ─────────────────────────────────────────────────────────
     private void renderTitleBar(DrawContext ctx) {
-        ctx.fill(px, py, px + POP_W, py + TITLE_H, C_SLOT_BG);
-        ctx.fill(px, py + TITLE_H - 1, px + POP_W, py + TITLE_H, C_DK);
+        // Başlık alanı (koyu, sunken)
+        ctx.fill(px + 2, py + 2, px + POP_W - 2, py + TITLE_H, C_SLOT_BG);
+        ctx.fill(px + 2, py + TITLE_H, px + POP_W - 2, py + TITLE_H + 1, C_DK);
 
-        // İkon (PNG veya unicode)
+        // İkon
         IconManager im = IconManager.get();
-        int iconX = px + 5, iconY = py + 2;
+        int iconX = px + 6, iconY = py + (TITLE_H - 10) / 2;
+        int textX = px + 8;
         if (im.hasPng("chest")) {
-            im.draw(ctx, "chest", iconX, iconY);
+            im.draw(ctx, "chest", iconX, py + 2);
+            textX = iconX + 20;
         }
-        int textX = im.hasPng("chest") ? iconX + 19 : iconX;
-        String title = (im.hasPng("chest") ? "" : im.fallback("chest") + "  ")
+
+        String title = (im.hasPng("chest") ? "" : im.fallback("chest") + " ")
                 + Text.translatable("chestmemory.records.title").getString()
-                + "  (" + chests.size() + ")";
+                + " (" + chests.size() + ")";
         ctx.drawTextWithShadow(textRenderer, Text.literal(title),
                 textX, py + (TITLE_H - textRenderer.fontHeight) / 2, C_TEXT);
     }
 
-    // ── Left panel (sandık listesi) ───────────────────────────────────────
+    // ── Left panel ────────────────────────────────────────────────────────
     private void renderLeftPanel(DrawContext ctx, int mouseX, int mouseY) {
-        int listY   = py + TITLE_H;
-        int listH   = POP_H - TITLE_H - FOOT_H;
+        int listY   = py + TITLE_H + 1;
+        int listH   = POP_H - TITLE_H - FOOT_H - 1;
         int visible = listH / ROW_H;
 
-        ctx.fill(px, listY, px + LEFT_W, listY + listH, C_SLOT_BG);
+        // Liste arka planı (hafif koyu)
+        ctx.fill(px + 2, listY, px + LEFT_W, listY + listH, C_SLOT_BG);
 
         if (chests.isEmpty()) {
             ctx.drawTextWithShadow(textRenderer,
                     Text.translatable("chestmemory.records.empty_list"),
-                    px + 5, listY + 8, C_TEXT_DIM);
-            ctx.fill(px, listY + listH, px + LEFT_W, listY + listH + 1, C_DK);
+                    px + 6, listY + 8, C_TEXT_DIM);
             return;
         }
 
-        MinecraftClient mc   = MinecraftClient.getInstance();
-        String activeDim     = mc.world != null ? mc.world.getRegistryKey().getValue().toString() : "";
-        double ppx           = mc.player != null ? mc.player.getX() : 0;
-        double ppz           = mc.player != null ? mc.player.getZ() : 0;
-        String diffStr       = Text.translatable("chestmemory.records.different_dimension").getString();
-        String blkStr        = Text.translatable("chestmemory.chest.blk").getString();
-        IconManager im       = IconManager.get();
+        MinecraftClient mc = MinecraftClient.getInstance();
+        String activeDim   = mc.world != null ? mc.world.getRegistryKey().getValue().toString() : "";
+        double ppx         = mc.player != null ? mc.player.getX() : 0;
+        double ppz         = mc.player != null ? mc.player.getZ() : 0;
+        String diffStr     = Text.translatable("chestmemory.records.different_dimension").getString();
+        String blkStr      = Text.translatable("chestmemory.chest.blk").getString();
+        IconManager im     = IconManager.get();
 
         for (int i = scrollOffset; i < Math.min(chests.size(), scrollOffset + visible); i++) {
             ChestRecord rec = chests.get(i);
             int  ry   = listY + (i - scrollOffset) * ROW_H;
-            boolean sel  = i == selIdx;
+            boolean sel  = (i == selIdx);
             boolean diff = !rec.isInDimension(activeDim);
 
-            // Row bg
-            ctx.fill(px, ry, px + LEFT_W, ry + ROW_H, sel ? C_ROW_SEL : C_SLOT_BG);
+            // Satır bg
+            ctx.fill(px + 2, ry, px + LEFT_W, ry + ROW_H,
+                    sel ? C_ROW_SEL : C_SLOT_BG);
 
-            // Seçili bevel
+            // Seçili — sunken bevel
             if (sel) {
-                ctx.fill(px, ry,          px + LEFT_W, ry + 1,       C_INSET_LT);
-                ctx.fill(px, ry,          px + 1,      ry + ROW_H,   C_INSET_LT);
-                ctx.fill(px, ry + ROW_H - 1, px + LEFT_W, ry + ROW_H, C_INSET_DK);
-                ctx.fill(px + LEFT_W - 1, ry, px + LEFT_W, ry + ROW_H, C_INSET_DK);
+                ctx.fill(px + 2, ry,          px + LEFT_W, ry + 1,         C_INSET_LT);
+                ctx.fill(px + 2, ry,          px + 3,      ry + ROW_H,     C_INSET_LT);
+                ctx.fill(px + 2, ry + ROW_H-1,px + LEFT_W, ry + ROW_H,    C_INSET_DK);
+                ctx.fill(px + LEFT_W-1, ry,   px + LEFT_W, ry + ROW_H,    C_INSET_DK);
+                // Ok
                 ctx.drawTextWithShadow(textRenderer, Text.literal("▶"),
-                        px + 2, ry + (ROW_H - textRenderer.fontHeight) / 2, C_YELLOW);
+                        px + 4, ry + (ROW_H - textRenderer.fontHeight) / 2, C_YELLOW);
             }
 
-            // Sandık ikonu (16x16 veya unicode)
-            int iconX = px + 13, iconY = ry + (ROW_H - 16) / 2;
-            String chestIconName = rec.isDouble() ? "chest_double" : "chest";
-            if (im.hasPng(chestIconName)) {
-                im.draw(ctx, chestIconName, iconX, iconY,
-                        diff ? 0xFF888888 : 0xFFFFFFFF);
+            // Sandık ikonu
+            int iconX = px + 14, iconY = ry + (ROW_H - 10) / 2;
+            String icName = rec.isDouble() ? "chest_double" : "chest";
+            if (im.hasPng(icName)) {
+                im.draw(ctx, icName, iconX, ry + (ROW_H - 16) / 2);
             } else {
-                ctx.drawTextWithShadow(textRenderer,
-                        Text.literal(im.fallback(chestIconName)),
-                        iconX, iconY + 2,
-                        diff ? C_TEXT_DIM : C_TEXT);
+                // Renkli nokta (yeşil = aynı dim, gri = farklı)
+                int dotX = px + 16, dotY = ry + ROW_H / 2 - 3;
+                ctx.fill(dotX, dotY, dotX + 6, dotY + 6,
+                        diff ? 0xFF888888 : C_GREEN);
             }
 
             int textX = px + 33;
 
-            // Rename field varsa çizme, yoksa isim çiz
+            // İsim (rename modundaysa çizme)
             if (!(renamingIdx == i && renameField != null)) {
                 String name = ChestStorage.getInstance().getDisplayName(rec);
-                // Uzunsa kes
-                String displayName = textRenderer.getWidth(name) > LEFT_W - 44
-                        ? textRenderer.trimToWidth(name, LEFT_W - 50) + "…"
-                        : name;
-                ctx.drawTextWithShadow(textRenderer, Text.literal(displayName),
-                        textX, ry + 6, diff ? C_TEXT_DIM : C_TEXT);
+                String disp = textRenderer.getWidth(name) > LEFT_W - 50
+                        ? textRenderer.trimToWidth(name, LEFT_W - 54) + "…" : name;
+                ctx.drawTextWithShadow(textRenderer, Text.literal(disp),
+                        textX, ry + 5, diff ? C_TEXT_DIM : C_TEXT);
             }
 
             // Koordinat
             ctx.drawTextWithShadow(textRenderer,
                     Text.literal(rec.getX() + ", " + rec.getY() + ", " + rec.getZ()),
-                    textX, ry + 16, diff ? C_TEXT_DIM : C_TEXT_GR);
+                    textX, ry + 15, diff ? C_TEXT_DIM : C_TEXT_GR);
 
             // Mesafe
             String dist = diff ? diffStr : ((int) rec.distanceTo(ppx, ppz)) + blkStr;
             ctx.drawTextWithShadow(textRenderer, Text.literal(dist),
                     textX, ry + 25, diff ? C_TEXT_DIM : C_CYAN);
 
-            // Rename (✏) ikonu
-            boolean hoverRen = mouseX >= px + LEFT_W - 18 && mouseX < px + LEFT_W
+            // ✏ rename ikonu
+            boolean hRen = mouseX >= px + LEFT_W - 18 && mouseX < px + LEFT_W
                     && mouseY >= ry && mouseY < ry + ROW_H;
-            int renIconX = px + LEFT_W - 14, renIconY = ry + (ROW_H - 10) / 2;
             if (im.hasPng("rename")) {
-                im.draw(ctx, "rename", renIconX - 2, renIconY - 3,
-                        hoverRen ? 0xFFFFFFFF : 0xFF888888);
+                im.draw(ctx, "rename", px + LEFT_W - 16, ry + (ROW_H - 16) / 2);
             } else {
                 ctx.drawTextWithShadow(textRenderer, Text.literal(im.fallback("rename")),
-                        renIconX, renIconY,
-                        hoverRen ? C_TEXT : C_TEXT_DIM);
+                        px + LEFT_W - 13, ry + (ROW_H - textRenderer.fontHeight) / 2,
+                        hRen ? C_TEXT : C_TEXT_DIM);
             }
 
             // Satır ayracı
-            ctx.fill(px, ry + ROW_H - 1, px + LEFT_W, ry + ROW_H, C_DK);
+            ctx.fill(px + 2, ry + ROW_H - 1, px + LEFT_W, ry + ROW_H, C_DK);
         }
-
-        // Alt ayraç
-        ctx.fill(px, listY + listH, px + LEFT_W, listY + listH + 1, C_DK);
     }
 
     // ── Divider ───────────────────────────────────────────────────────────
     private void renderDivider(DrawContext ctx) {
-        ctx.fill(px + LEFT_W,     py + TITLE_H, px + LEFT_W + 1, py + POP_H - FOOT_H, C_DK);
-        ctx.fill(px + LEFT_W + 1, py + TITLE_H, px + LEFT_W + 2, py + POP_H - FOOT_H, C_LT);
+        int top = py + TITLE_H + 1;
+        int bot = py + POP_H - FOOT_H;
+        ctx.fill(px + LEFT_W,     top, px + LEFT_W + 1, bot, C_DK);
+        ctx.fill(px + LEFT_W + 1, top, px + LEFT_W + 2, bot, C_LT);
     }
 
-    // ── Right panel (slot grid + detay) ───────────────────────────────────
+    // ── Right panel ───────────────────────────────────────────────────────
     private void renderRightPanel(DrawContext ctx, int mouseX, int mouseY) {
         int rpX = px + LEFT_W + 3;
-        int rpW = POP_W - LEFT_W - 3;
-        int rpY = py + TITLE_H;
+        int rpW = POP_W - LEFT_W - 5;
+        int rpY = py + TITLE_H + 1;
 
-        footerDivider(ctx, rpX, rpW);
+        // Footer divider
+        int fy = py + POP_H - FOOT_H;
+        ctx.fill(rpX, fy, px + POP_W - 2, fy + 1, C_DK);
 
         if (chests.isEmpty()) {
             ctx.drawCenteredTextWithShadow(textRenderer,
                     Text.translatable("chestmemory.records.select_hint"),
-                    rpX + rpW / 2, py + POP_H / 2 - 10, C_TEXT_DIM);
+                    rpX + rpW / 2, py + POP_H / 2 - 8, C_TEXT_DIM);
             return;
         }
 
         ChestRecord rec   = chests.get(selIdx);
         String      name  = ChestStorage.getInstance().getDisplayName(rec);
-        int         slots = rec.getSlotCount(); // 27 veya 54
+        int         slots = rec.getSlotCount();
         int         rows  = slots / 9;
 
-        // Sub-header
-        ctx.fill(rpX, rpY, rpX + rpW, rpY + TITLE_H, C_SLOT_BG);
-        ctx.fill(rpX, rpY + TITLE_H - 1, rpX + rpW, rpY + TITLE_H, C_DK);
+        // Sub-header (sandık adı satırı)
+        ctx.fill(rpX, rpY, rpX + rpW, rpY + TITLE_H - 2, C_SLOT_BG);
+        ctx.fill(rpX, rpY + TITLE_H - 2, rpX + rpW, rpY + TITLE_H - 1, C_DK);
+
+        // Sandık adı (vanilla dark title style)
         ctx.drawTextWithShadow(textRenderer, Text.literal(name),
-                rpX + 5, rpY + (TITLE_H - textRenderer.fontHeight) / 2, C_TEXT);
+                rpX + 5, rpY + (TITLE_H - 2 - textRenderer.fontHeight) / 2, C_TEXT);
 
-        // Dim badge
+        // Dim badge (sunken inset)
         String dimShort = shortDim(rec.getDimension());
-        int badgeW = textRenderer.getWidth(dimShort) + 8;
-        int badgeX = rpX + rpW - badgeW - 3;
-        int badgeY = rpY + (TITLE_H - textRenderer.fontHeight) / 2 - 2;
-        inset(ctx, badgeX, badgeY, badgeW, textRenderer.fontHeight + 4);
+        int bw = textRenderer.getWidth(dimShort) + 8;
+        int bx = rpX + rpW - bw - 3;
+        int by2 = rpY + (TITLE_H - 2 - (textRenderer.fontHeight + 4)) / 2;
+        inset(ctx, bx, by2, bw, textRenderer.fontHeight + 4);
         ctx.drawTextWithShadow(textRenderer, Text.literal(dimShort),
-                badgeX + 4, badgeY + 2, C_TEXT);
+                bx + 4, by2 + 2, C_TEXT);
 
-        // Slot label
-        int bodyY = rpY + TITLE_H + 5;
+        // ── Slot grid ─────────────────────────────────────────────────────
+        int bodyY   = rpY + TITLE_H + 2;
         String slotLabel = Text.translatable(rec.isDouble()
                 ? "chestmemory.records.slot_label_double"
                 : "chestmemory.records.slot_label_single").getString();
@@ -356,24 +373,20 @@ public class ChestRecordsScreen extends Screen {
                 rpX + 5, bodyY, C_TEXT_DIM);
         bodyY += textRenderer.fontHeight + 3;
 
-        // ── Slot grid ─────────────────────────────────────────────────────
         List<ChestItem> items = rec.getItems();
         int gridW = 9 * (SLOT_S + SLOT_G) - SLOT_G;
-
-        // Grid'i sağ panel içinde ortala
         int gridX = rpX + (rpW - gridW) / 2;
 
         for (int slot = 0; slot < slots; slot++) {
-            int col = slot % 9;
-            int row = slot / 9;
-            // Çift sandıkta iki grup arasına 3px boşluk
+            int col    = slot % 9;
+            int row    = slot / 9;
             int extraY = (rec.isDouble() && row >= 3) ? 3 : 0;
-            int sx = gridX + col * (SLOT_S + SLOT_G);
-            int sy = bodyY + row * (SLOT_S + SLOT_G) + extraY;
+            int sx     = gridX + col * (SLOT_S + SLOT_G);
+            int sy     = bodyY + row * (SLOT_S + SLOT_G) + extraY;
 
             slotBox(ctx, sx, sy, SLOT_S);
 
-            ChestItem ci = getItemForSlot(items, slot);
+            ChestItem ci = itemForSlot(items, slot);
             if (ci != null) {
                 ItemStack stack = buildStack(ci.getItemId());
                 if (!stack.isEmpty()) {
@@ -385,8 +398,8 @@ public class ChestRecordsScreen extends Screen {
                                 sy + SLOT_S - textRenderer.fontHeight + 1, C_YELLOW);
                     }
                 }
-                // Tooltip
-                if (mouseX >= sx && mouseX < sx + SLOT_S && mouseY >= sy && mouseY < sy + SLOT_S)
+                if (mouseX >= sx && mouseX < sx + SLOT_S
+                        && mouseY >= sy && mouseY < sy + SLOT_S)
                     ctx.drawTooltip(textRenderer,
                             Text.literal(ci.getDisplayName() + " ×" + ci.getCount()),
                             mouseX, mouseY);
@@ -395,19 +408,17 @@ public class ChestRecordsScreen extends Screen {
 
         // Son güncelleme
         int metaY = bodyY + rows * (SLOT_S + SLOT_G) + (rec.isDouble() ? 6 : 3);
-        String updStr = Text.translatable("chestmemory.records.last_updated").getString()
+        String upd = Text.translatable("chestmemory.records.last_updated").getString()
                 + (rec.getLastUpdated() != null
                    ? rec.getLastUpdated().substring(0, Math.min(16, rec.getLastUpdated().length()))
                    : "?");
-        ctx.drawTextWithShadow(textRenderer, Text.literal(updStr),
-                rpX + 5, metaY, C_TEXT_DIM);
+        ctx.drawTextWithShadow(textRenderer, Text.literal(upd), rpX + 5, metaY, C_TEXT_DIM);
 
         // Onay mesajı
         if (confirmDel) {
-            int msgY = py + POP_H - FOOT_H + 3;
             ctx.drawCenteredTextWithShadow(textRenderer,
                     Text.translatable("chestmemory.records.confirm_delete"),
-                    rpX + rpW / 2, msgY, C_RED);
+                    rpX + rpW / 2, fy - textRenderer.fontHeight - 2, C_RED);
         }
     }
 
@@ -429,11 +440,11 @@ public class ChestRecordsScreen extends Screen {
     public boolean keyPressed(KeyInput input) {
         int key = input.key();
         if (renamingIdx >= 0) {
-            if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) { commitRename();  return true; }
-            if (key == GLFW.GLFW_KEY_ESCAPE)                                  { cancelRename();  return true; }
+            if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) { commitRename(); return true; }
+            if (key == GLFW.GLFW_KEY_ESCAPE)                                  { cancelRename(); return true; }
             return super.keyPressed(input);
         }
-        if (key == GLFW.GLFW_KEY_ESCAPE)                                      { close();         return true; }
+        if (key == GLFW.GLFW_KEY_ESCAPE)                                      { close();        return true; }
         if (key == GLFW.GLFW_KEY_UP   && selIdx > 0)                          { selIdx--; confirmDel = false; syncBtns(); return true; }
         if (key == GLFW.GLFW_KEY_DOWN && selIdx < chests.size() - 1)          { selIdx++; confirmDel = false; syncBtns(); return true; }
         return super.keyPressed(input);
@@ -458,13 +469,12 @@ public class ChestRecordsScreen extends Screen {
     private void startRename(int idx) {
         cancelRename();
         renamingIdx = idx;
-        ChestRecord rec = chests.get(idx);
-        int listY = py + TITLE_H;
-        int ry    = listY + (idx - scrollOffset) * ROW_H;
+        int ry = py + TITLE_H + 1 + (idx - scrollOffset) * ROW_H;
         renameField = new TextFieldWidget(textRenderer,
-                px + 33, ry + 6, LEFT_W - 52, 10, null, Text.empty());
+                px + 33, ry + 5, LEFT_W - 52, 10, null, Text.empty());
         renameField.setMaxLength(32);
-        renameField.setText(rec.getCustomName() != null ? rec.getCustomName() : "");
+        renameField.setText(chests.get(idx).getCustomName() != null
+                ? chests.get(idx).getCustomName() : "");
         renameField.setFocused(true);
         renameField.setDrawsBackground(false);
         renameField.setEditableColor(0xFFFFFF);
@@ -485,15 +495,6 @@ public class ChestRecordsScreen extends Screen {
     }
 
     // ── Draw helpers ──────────────────────────────────────────────────────
-    /** Raised panel bevel */
-    private void bevel(DrawContext ctx, int x, int y, int w, int h) {
-        ctx.fill(x,     y,     x+w,   y+2,   C_LT);
-        ctx.fill(x,     y,     x+2,   y+h,   C_LT);
-        ctx.fill(x,     y+h-2, x+w,   y+h,   C_DK);
-        ctx.fill(x+w-2, y,     x+w,   y+h,   C_DK);
-    }
-
-    /** Sunken inset */
     private void inset(DrawContext ctx, int x, int y, int w, int h) {
         ctx.fill(x,     y,     x+w, y+h,   C_INSET);
         ctx.fill(x,     y,     x+w, y+1,   C_INSET_LT);
@@ -502,7 +503,6 @@ public class ChestRecordsScreen extends Screen {
         ctx.fill(x+w-1, y,     x+w, y+h,   C_INSET_DK);
     }
 
-    /** Vanilla slot box */
     private void slotBox(DrawContext ctx, int x, int y, int s) {
         ctx.fill(x,     y,     x+s, y+s, C_SLOT_BG);
         ctx.fill(x,     y,     x+s, y+1, C_SLOT_LT);
@@ -511,13 +511,8 @@ public class ChestRecordsScreen extends Screen {
         ctx.fill(x+s-1, y,     x+s, y+s, C_SLOT_DK);
     }
 
-    private void footerDivider(DrawContext ctx, int rpX, int rpW) {
-        int fy = py + POP_H - FOOT_H;
-        ctx.fill(rpX, fy, rpX + rpW, fy + 1, C_DK);
-    }
-
     // ── Util ──────────────────────────────────────────────────────────────
-    private ChestItem getItemForSlot(List<ChestItem> items, int slot) {
+    private ChestItem itemForSlot(List<ChestItem> items, int slot) {
         for (ChestItem ci : items) if (ci.getSlot() == slot) return ci;
         return null;
     }

@@ -2,6 +2,7 @@ package com.muhofy.chestmemory.ui;
 
 import com.muhofy.chestmemory.ChestMemoryMod;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
@@ -69,35 +70,28 @@ public class IconManager {
      * @param color   Tint color for PNG (use 0xFFFFFFFF for no tint).
      *                Unicode fallback ignores this.
      */
-    public void draw(DrawContext ctx, String name, int x, int y, int color) {
+    /** Invalidates the texture existence cache (call after resource reload) */
+    public void invalidateCache() { existsCache.clear(); }
+
+    public void draw(DrawContext ctx, String name, int x, int y) {
         IconDef def = ICONS.get(name);
         if (def == null) return;
 
         if (textureExists(def.id)) {
-            ctx.drawTexture(
-                    net.minecraft.client.render.RenderLayer::getGuiTextured,
-                    def.id,
-                    x, y, 0, 0,
-                    16, 16,
-                    16, 16
+            ctx.drawGuiTexture(
+                RenderPipelines.GUI_TEXTURED,
+                def.id,
+                x, y, 16, 16
             );
         } else {
-            // Unicode fallback — drawn with shadow at center of 16x16 area
             net.minecraft.client.MinecraftClient mc =
                     net.minecraft.client.MinecraftClient.getInstance();
             if (mc.textRenderer != null) {
                 ctx.drawTextWithShadow(mc.textRenderer,
                         net.minecraft.text.Text.literal(def.fallback),
-                        x, y + 2, color);
+                        x, y + 2, 0xFFFFFFFF);
             }
         }
-    }
-
-    /**
-     * Convenience: draw with white tint (no tint).
-     */
-    public void draw(DrawContext ctx, String name, int x, int y) {
-        draw(ctx, name, x, y, 0xFFFFFFFF);
     }
 
     /**
